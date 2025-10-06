@@ -19,7 +19,7 @@ message.Role = ChatRole.User;
 message.Contents.Add(new TextContent("Here is a purchase order image. Please extract the relevant information in JSON format."));
 
 // Use a local purchase order image - read as byte array and use DataContent
-string imagePath = Path.Combine(Directory.GetCurrentDirectory(), "PurchaseOrders", "AdventureWorksPO_HROrder.png");
+string imagePath = Path.Combine(Directory.GetCurrentDirectory(), "PurchaseOrders", "AdventureWorksPO_MKTOrder.png");
 byte[] imageBytes = File.ReadAllBytes(imagePath);
 message.Contents.Add(new DataContent(imageBytes, "image/png"));
 
@@ -28,10 +28,19 @@ var intakeThread = intakeAgent.GetNewThread();
 // Run the agent and get structured output
 var response = await intakeAgent.RunAsync(message, intakeThread);
 
+Console.WriteLine("Raw Response:");
+Console.WriteLine(response.ToString());
+
 // Deserialize the response into the PurchaseOrder class
 var purchaseOrder = response.Deserialize<PurchaseOrder>(JsonSerializerOptions.Web);
 
-Console.WriteLine("Purchase Order Information:");
+if (purchaseOrder == null)
+{
+    Console.WriteLine("Failed to parse purchase order from response.");
+    return;
+}
+
+Console.WriteLine("\nPurchase Order Information:");
 Console.WriteLine($"PO Number: {purchaseOrder.PoNumber}");
 Console.WriteLine($"Subtotal: {purchaseOrder.SubTotal}");
 Console.WriteLine($"Tax: {purchaseOrder.Tax}");
@@ -63,3 +72,11 @@ Console.WriteLine($"Supplier: {purchaseOrder.SupplierName}");
 Console.WriteLine($"Department: {purchaseOrder.BuyerDepartment}");
 Console.WriteLine($"Is Approved: {purchaseOrder.IsApproved}");
 Console.WriteLine($"Approval Reason: {purchaseOrder.ApprovalReason}");
+
+var dataAgent = Agents.CreateDataAgent();
+var dataThread = dataAgent.GetNewThread();
+var dataMessage = new ChatMessage();
+dataMessage.Contents.Add(new TextContent($"Here is the final purchase order data in JSON format: {JsonSerializer.Serialize(purchaseOrder, JsonSerializerOptions.Web)}. Please write this data to a CSV file if the PO was approved."));
+var dataResponse = await dataAgent.RunAsync(dataMessage, dataThread);
+Console.WriteLine("\nData Agent Response:");
+Console.WriteLine(dataResponse.ToString());

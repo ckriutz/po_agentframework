@@ -1,5 +1,6 @@
 using System;
 using System.ClientModel;
+using System.ComponentModel;
 using Azure.AI.OpenAI;
 using Azure.Identity;
 using Microsoft.Agents.AI;
@@ -13,9 +14,31 @@ using OpenAI;
 
 public static class Agents
 {
-    public static string endpoint = "";
-    public static string apiKey = "";
-    public static string deploymentName = "";
+    // Use environment variables if available, otherwise fall back to hardcoded values for development
+    public static string endpoint = Environment.GetEnvironmentVariable("ENDPOINT");
+    public static string apiKey = Environment.GetEnvironmentVariable("API_KEY");
+    public static string deploymentName = Environment.GetEnvironmentVariable("DEPLOYMENT_NAME");
+
+    [Description("Function to write Purchase Order data to a CSV file.")]
+    public static string WriteToCSVFile([Description("Function to write Purchase Order data to a CSV file.")] PurchaseOrder purchaseOrder)
+    {
+
+        // Define the CSV file path
+        string filePath = "purchase_orders.csv";
+
+        // Create the CSV header if the file does not exist
+        if (!System.IO.File.Exists(filePath))
+        {
+            var header = "PONumber,Subtotal,Tax,GrandTotal,SupplierName,BuyerDepartment,Notes";
+            System.IO.File.WriteAllText(filePath, header + Environment.NewLine);
+        }
+
+        // Append the purchase order data to the CSV file
+        var csvLine = $"{purchaseOrder.PoNumber},{purchaseOrder.SubTotal},{purchaseOrder.Tax},{purchaseOrder.GrandTotal},{purchaseOrder.SupplierName},{purchaseOrder.BuyerDepartment},{purchaseOrder.Notes}";
+        System.IO.File.AppendAllText(filePath, csvLine + Environment.NewLine);
+
+        return $"Purchase order {purchaseOrder.PoNumber} written to CSV file.";
+    }
 
     public static AIAgent CreateIntakeAgent()
     {
@@ -26,7 +49,7 @@ public static class Agents
             Analyze this purchase order image and extract the key details: PO Number, Subtotal, Tax, Grand Total, Supplier Name, Buyer Department, and Notes.
             """;
 
-        // Create the agent options, specifying the response format to use a JSON schema based on the PurchaseOrder class.
+        // Try using structured output with vision - this should work with newer API versions
         ChatClientAgentOptions agentOptions = new(name: AgentName, instructions: AgentInstructions)
         {
             ChatOptions = new()
@@ -41,7 +64,7 @@ public static class Agents
 
         return agent;
     }
-    
+
     public static AIAgent CreateProcessingAgent()
     {
         var AgentName = "ProcessingAgent";
@@ -63,6 +86,26 @@ public static class Agents
                 ResponseFormat = ChatResponseFormat.ForJsonSchema<PurchaseOrderApproval>()
             }
         };
+
+        AIAgent agent = new AzureOpenAIClient(new Uri(endpoint), new ApiKeyCredential(apiKey))
+            .GetChatClient(deploymentName)
+            .CreateAIAgent(agentOptions);
+
+        return agent;
+    }
+
+    public static AIAgent CreateDataAgent()
+    {
+        var AgentName = "DataAgent";
+        var AgentInstructions =
+         """
+            You are a specialized document processor, and your task is to read the JSON data of a purchase order (PO) and determine if it was approved or not.
+            If the document was approved, write the purchase order data to a CSV file using the provided function.
+            If it was not approved, do not write to the CSV file, and return a message indicating the PO was not approved, and the reason why.
+        """;
+
+        // Create the agent options, specifying the response format to use a JSON schema based on the SQLInsertStatement class.
+        ChatClientAgentOptions agentOptions = new(name: AgentName, instructions: AgentInstructions, tools: [AIFunctionFactory.Create(WriteToCSVFile)]) { };
 
         AIAgent agent = new AzureOpenAIClient(new Uri(endpoint), new ApiKeyCredential(apiKey))
             .GetChatClient(deploymentName)
