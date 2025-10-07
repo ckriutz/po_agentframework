@@ -10,9 +10,8 @@ using Microsoft.Extensions.AI;
 using OpenAI;
 
 
+
 var intakeAgent = Agents.CreateIntakeAgent();
-
-
 
 ChatMessage message = new ChatMessage();
 message.Role = ChatRole.User;
@@ -40,15 +39,6 @@ if (purchaseOrder == null)
     return;
 }
 
-Console.WriteLine("\nPurchase Order Information:");
-Console.WriteLine($"PO Number: {purchaseOrder.PoNumber}");
-Console.WriteLine($"Subtotal: {purchaseOrder.SubTotal}");
-Console.WriteLine($"Tax: {purchaseOrder.Tax}");
-Console.WriteLine($"Grand Total: {purchaseOrder.GrandTotal}");
-Console.WriteLine($"Supplier Name: {purchaseOrder.SupplierName}");
-Console.WriteLine($"Buyer Department: {purchaseOrder.BuyerDepartment}");
-Console.WriteLine($"Notes: {purchaseOrder.Notes}");
-
 var processingAgent = Agents.CreateProcessingAgent();
 var processingThread = processingAgent.GetNewThread();
 var processingMessage = new ChatMessage();
@@ -65,11 +55,7 @@ var approval = processingResponse.Deserialize<PurchaseOrderApproval>(JsonSeriali
 purchaseOrder.IsApproved = approval.IsApproved;
 purchaseOrder.ApprovalReason = approval.ApprovalReason;
 
-Console.WriteLine("\nFinal Purchase Order with Approval:");
-Console.WriteLine($"PO Number: {purchaseOrder.PoNumber}");
-Console.WriteLine($"Grand Total: {purchaseOrder.GrandTotal}");
-Console.WriteLine($"Supplier: {purchaseOrder.SupplierName}");
-Console.WriteLine($"Department: {purchaseOrder.BuyerDepartment}");
+Console.WriteLine("\n Purchase Order Approval Results:");
 Console.WriteLine($"Is Approved: {purchaseOrder.IsApproved}");
 Console.WriteLine($"Approval Reason: {purchaseOrder.ApprovalReason}");
 
