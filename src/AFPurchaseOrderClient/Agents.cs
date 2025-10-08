@@ -47,7 +47,7 @@ public static class Agents
          """
             You are a specialized document processor, and your task is to read the image of a purchase order (PO) and extract the relevant information in a structured format.
             Analyze this purchase order image and extract the key details: PO Number, Subtotal, Tax, Grand Total, Supplier Name, Buyer Department, and Notes.
-            """;
+        """;
 
         // Try using structured output with vision - this should work with newer API versions
         ChatClientAgentOptions agentOptions = new(name: AgentName, instructions: AgentInstructions)
