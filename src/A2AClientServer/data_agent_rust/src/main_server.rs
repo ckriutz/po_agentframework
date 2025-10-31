@@ -38,15 +38,18 @@ async fn main() {
     println!("==========================================");
     println!("🌐 Server URL: http://localhost:8080");
     println!("📋 Available endpoints:");
-    println!("   GET  /                    - Agent info and API documentation");
-    println!("   GET  /health             - Health check");
-    println!("   POST /agent/task         - Submit purchase order for processing");
-    println!("   GET  /agent/task/{{id}}   - Get task status and results");
-    println!("   POST /agent/task/{{id}}/cancel - Cancel a task");
+    println!("   GET  /                         - Agent info and API documentation");
+    println!("   GET  /.well-known/agent.json   - A2A compliant agent card (standard)");
+    println!("   GET  /health                   - Health check");
+    println!("   POST /agent/task               - Submit purchase order for processing");
+    println!("   GET  /agent/task/{{id}}         - Get task status and results");
+    println!("   POST /agent/task/{{id}}/cancel  - Cancel a task");
     println!("\n📝 Example usage:");
     println!("   curl http://localhost:8080/health");
+    println!("   curl http://localhost:8080/.well-known/agent.json");
     println!("   curl http://localhost:8080/agent/info");
-    println!("\n🔗 Full API documentation available at: http://localhost:8080");
+    println!("\n🔗 A2A Agent Card: http://localhost:8080/.well-known/agent.json");
+    println!("🔗 Full API documentation available at: http://localhost:8080");
     println!("==========================================\n");
 
     // Start the server

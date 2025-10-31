@@ -21,7 +21,7 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "rustc --version",
+	"postCreateCommand": "apt update && apt install -y pkg-config libssl-dev",
 
 	// Configure tool-specific properties.
 	// "customizations": {},

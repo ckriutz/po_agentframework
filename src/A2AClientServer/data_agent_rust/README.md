@@ -78,10 +78,16 @@ cd data_agent_rust
 cargo build
 
 # Run the basic demo
-cargo run
+cargo run --bin demo
 
 # Run comprehensive examples
 cargo run --example enhanced_demo
+
+# Test A2A agent card implementation
+cargo run --example test_agent_card
+
+# Test server A2A endpoints
+cargo run --example test_server_endpoint
 
 # Run tests
 cargo test
@@ -175,16 +181,23 @@ The agent enforces these business rules:
 
 ```
 src/
-├── lib.rs          # Library exports
-├── main.rs         # Basic demo with your exact PO data
-├── agent.rs        # Core PurchaseOrderAgent implementation
+├── lib.rs              # Library exports
+├── main.rs             # Basic demo with your exact PO data
+├── main_server.rs      # A2A compliant web server
+├── agent.rs            # Core PurchaseOrderAgent implementation
+├── server.rs           # HTTP endpoints and routing
+├── a2a_agent_card.rs   # A2A compliant AgentCard structures
 └── examples/
-    └── enhanced_demo.rs  # Advanced usage examples
+    ├── enhanced_demo.rs        # Advanced usage examples
+    ├── test_agent_card.rs      # A2A agent card testing
+    └── test_server_endpoint.rs # A2A server endpoint testing
 ```
 
 ### Key Components
 
 - **PurchaseOrderAgent**: Main agent implementing A2AProtocol for PO processing
+- **A2AAgentCard**: Full A2A compliant agent card with capabilities, skills, and metadata
+- **Web Server**: HTTP endpoints for A2A protocol compliance (/.well-known/agent.json)
 - **PurchaseOrder**: Core data structure matching your schema exactly
 - **PurchaseOrderItem**: Individual line item structure
 - **ProcessingResult**: Complete processing outcome with validation details
@@ -196,10 +209,20 @@ src/
 
 - `new()` - Create agent with default configuration
 - `with_config(name, description, url, version)` - Create with custom config
-- `get_agent_card()` - Get agent metadata
+- `get_agent_card()` - Get basic agent metadata (legacy)
+- `get_a2a_agent_card()` - Get full A2A compliant agent card
 - `send_task(message)` - Process purchase order
 - `get_task(task_id)` - Retrieve task by ID
 - `cancel_task(task_id)` - Cancel processing task
+
+### A2A Web Server Endpoints
+
+- `GET /.well-known/agent.json` - **A2A standard agent card endpoint**
+- `GET /` - Agent information and API documentation
+- `GET /health` - Health check
+- `POST /agent/task` - Submit purchase order for processing
+- `GET /agent/task/{id}` - Get task status and results
+- `POST /agent/task/{id}/cancel` - Cancel a task
 
 ### Data Structures
 
@@ -228,6 +251,114 @@ test agent::tests::test_get_task ... ok
 test agent::tests::test_cancel_task ... ok
 test agent::tests::test_get_nonexistent_task ... ok
 test agent::tests::test_invalid_message_format ... ok
+```
+
+## 🎯 A2A Protocol Implementation
+
+This agent implements the full A2A protocol specification with a compliant AgentCard:
+
+### ✅ A2A Agent Card Compliance
+
+The agent exposes its capabilities through a **fully compliant A2A AgentCard** at the standard endpoint:
+
+**🔗 Standard A2A Endpoint:** `http://localhost:8080/.well-known/agent.json`
+
+#### Agent Card Structure
+
+```json
+{
+  "name": "Purchase Order Processing Agent",
+  "description": "Specialized A2A agent for processing, validating, and managing purchase orders...",
+  "url": "http://localhost:8080",
+  "provider": {
+    "organization": "A2A Protocol Framework",
+    "url": "https://agent2agent.info"
+  },
+  "version": "1.0.0",
+  "documentationUrl": "http://localhost:8080/docs",
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "stateTransitionHistory": true
+  },
+  "authentication": {
+    "schemes": ["none"],
+    "credentials": null
+  },
+  "defaultInputModes": ["application/json", "text/plain"],
+  "defaultOutputModes": ["text/csv", "application/json", "text/plain"],
+  "skills": [
+    {
+      "id": "purchase-order-processing",
+      "name": "Purchase Order Processing",
+      "description": "Process and validate purchase orders with comprehensive business rules checking...",
+      "tags": ["finance", "procurement", "validation", "business-rules", "approval-workflow"],
+      "examples": [
+        "Process a purchase order for office supplies totaling $500",
+        "Validate a marketing department purchase order with tax calculations",
+        "Check approval status for a high-value IT equipment purchase order",
+        "Generate CSV report from purchase order data"
+      ]
+    },
+    {
+      "id": "purchase-order-validation",
+      "name": "Purchase Order Validation",
+      "description": "Validate purchase order data including required fields, financial calculations...",
+      "tags": ["validation", "data-integrity", "business-rules", "compliance"],
+      "examples": [
+        "Validate that all required fields are present in a purchase order",
+        "Check that line totals match quantity × unit price calculations",
+        "Verify that tax calculations are correct based on tax rate",
+        "Ensure buyer department is authorized for purchases"
+      ]
+    },
+    {
+      "id": "purchase-order-reporting",
+      "name": "Purchase Order Reporting",
+      "description": "Generate structured reports and summaries from purchase order data...",
+      "tags": ["reporting", "data-export", "csv", "analytics"],
+      "examples": [
+        "Generate CSV report with PO number, totals, supplier, and department",
+        "Create JSON summary with validation status and key metrics",
+        "Export purchase order details for accounting system integration"
+      ],
+      "outputModes": ["text/csv", "application/json"]
+    }
+  ]
+}
+```
+
+#### A2A Compliance Features
+
+- ✅ **Standard Agent Discovery**: Agent card available at `/.well-known/agent.json`
+- ✅ **Complete Agent Metadata**: All required and optional A2A fields present
+- ✅ **Provider Information**: Organization and URL for agent attribution
+- ✅ **Capability Declaration**: Streaming, notifications, and state history support
+- ✅ **Authentication Specification**: Clear authentication requirements (none for demo)
+- ✅ **Input/Output Modes**: MIME types for supported data formats
+- ✅ **Structured Skills**: Detailed skill definitions with IDs, tags, and examples
+- ✅ **Task-based Interactions**: Full A2A protocol for send_task, get_task, cancel_task
+- ✅ **Structured Data Exchange**: Message with multiple Part types
+- ✅ **Error Handling**: Comprehensive validation and processing error responses
+- ✅ **Status Tracking**: Task states and completion status monitoring
+
+### Testing A2A Compliance
+
+```bash
+# Get the A2A agent card
+curl http://localhost:8080/.well-known/agent.json
+
+# Test agent capabilities
+curl http://localhost:8080/agent/info
+
+# Health check
+curl http://localhost:8080/health
+
+# Test A2A agent card structure
+cargo run --example test_agent_card
+
+# Test server endpoints
+cargo run --example test_server_endpoint
 ```
 
 ## 🎯 A2A Protocol Implementation

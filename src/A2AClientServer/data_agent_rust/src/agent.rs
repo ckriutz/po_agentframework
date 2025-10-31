@@ -7,6 +7,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
 
+use crate::a2a_agent_card::A2AAgentCard;
+
 /// Purchase Order Item structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -83,21 +85,26 @@ pub struct PurchaseOrderSummary {
 /// A specialized A2A agent for processing Purchase Orders
 pub struct PurchaseOrderAgent {
     agent_card: AgentCard,
+    a2a_agent_card: A2AAgentCard,
     task_store: Arc<Mutex<InMemoryTaskStore>>,
 }
 
 impl PurchaseOrderAgent {
     /// Create a new PurchaseOrderAgent
     pub fn new() -> Self {
+        let base_url = "http://localhost:8080";
         let agent_card = AgentCard {
             name: "Purchase Order Processing Agent".to_string(),
             description: Some("Specialized A2A agent for processing and validating purchase orders".to_string()),
-            url: "http://localhost:8080".to_string(),
+            url: base_url.to_string(),
             version: "1.0.0".to_string(),
         };
 
+        let a2a_agent_card = A2AAgentCard::new_purchase_order_agent(base_url);
+
         Self {
             agent_card,
+            a2a_agent_card,
             task_store: Arc::new(Mutex::new(InMemoryTaskStore::new())),
         }
     }
@@ -111,8 +118,18 @@ impl PurchaseOrderAgent {
             version: version.to_string(),
         };
 
+        let a2a_agent_card = A2AAgentCard::new_custom(
+            name,
+            description,
+            url,
+            version,
+            Some("A2A Protocol Framework"),
+            Some("https://agent2agent.info"),
+        );
+
         Self {
             agent_card,
+            a2a_agent_card,
             task_store: Arc::new(Mutex::new(InMemoryTaskStore::new())),
         }
     }
@@ -120,6 +137,11 @@ impl PurchaseOrderAgent {
     /// Get the agent's card information
     pub fn get_agent_card(&self) -> &AgentCard {
         &self.agent_card
+    }
+
+    /// Get the A2A compliant agent card
+    pub fn get_a2a_agent_card(&self) -> &A2AAgentCard {
+        &self.a2a_agent_card
     }
 
     /// Validate a purchase order and return any errors or warnings

@@ -12,6 +12,8 @@ use std::sync::Arc;
 use tower_http::cors::CorsLayer;
 use tracing::{info, error};
 
+use crate::a2a_agent_card::A2AAgentCard;
+
 /// HTTP request structure for sending tasks
 #[derive(Debug, Deserialize)]
 pub struct SendTaskRequest {
@@ -56,13 +58,36 @@ pub fn create_router(agent: Arc<PurchaseOrderAgent>) -> Router {
 
     Router::new()
         .route("/", get(get_agent_info))
+        .route("/.well-known/agent.json", get(get_a2a_agent_card))
+        .route("/agent.json", get(get_a2a_agent_card)) // Alternative path some A2A clients expect
+        .route("/a2a/agent.json", get(get_a2a_agent_card)) // Another common alternative
+        .route("/agent/card", get(get_a2a_agent_card)) // RESTful alternative
         .route("/agent/info", get(get_agent_info))
         .route("/agent/task", post(send_task))
         .route("/agent/task/:task_id", get(get_task))
         .route("/agent/task/:task_id/cancel", post(cancel_task))
         .route("/health", get(health_check))
+        .fallback(catch_all) // Add catch-all for debugging
         .layer(CorsLayer::permissive())
         .with_state(state)
+}
+
+/// Get A2A compliant agent card (standard endpoint)
+async fn get_a2a_agent_card(State(state): State<Arc<AppState>>) -> Json<A2AAgentCard> {
+    info!("🔍 Agent card requested");
+    Json(state.agent.get_a2a_agent_card().clone())
+}
+
+/// Catch-all handler to log what requests are being made
+async fn catch_all(uri: axum::http::Uri) -> Result<Json<serde_json::Value>, StatusCode> {
+    error!("❌ 404 - Path not found: {}", uri.path());
+    info!("💡 Available agent card endpoints:");
+    info!("   GET /.well-known/agent.json");
+    info!("   GET /agent.json");
+    info!("   GET /a2a/agent.json");
+    info!("   GET /agent/card");
+    
+    Err(StatusCode::NOT_FOUND)
 }
 
 /// Get agent information
@@ -74,6 +99,26 @@ async fn get_agent_info(State(state): State<Arc<AppState>>) -> Json<AgentInfoRes
             path: "/".to_string(),
             method: "GET".to_string(),
             description: "Get agent information and available endpoints".to_string(),
+        },
+        EndpointInfo {
+            path: "/.well-known/agent.json".to_string(),
+            method: "GET".to_string(),
+            description: "Get A2A compliant agent card (standard A2A endpoint)".to_string(),
+        },
+        EndpointInfo {
+            path: "/agent.json".to_string(),
+            method: "GET".to_string(),
+            description: "Get A2A compliant agent card (alternative endpoint)".to_string(),
+        },
+        EndpointInfo {
+            path: "/a2a/agent.json".to_string(),
+            method: "GET".to_string(),
+            description: "Get A2A compliant agent card (alternative endpoint)".to_string(),
+        },
+        EndpointInfo {
+            path: "/agent/card".to_string(),
+            method: "GET".to_string(),
+            description: "Get A2A compliant agent card (RESTful endpoint)".to_string(),
         },
         EndpointInfo {
             path: "/agent/info".to_string(),

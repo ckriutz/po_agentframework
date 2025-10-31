@@ -12,6 +12,7 @@ var token = cts.Token;
 // First things first, lets see if can cwn get the agent, and it's card.
 var IntakeAgentUrl = new Uri("http://localhost:5000");
 var processingAgentUrl = new Uri("http://localhost:9998");
+var dataAgentUrl = new Uri("http://localhost:8080");
 var httpClient = new HttpClient
 {
     Timeout = TimeSpan.FromMinutes(2)
@@ -20,9 +21,9 @@ var httpClient = new HttpClient
 // First lets set up the intake agent.
 var intakeAgentCardResolver = new A2ACardResolver(IntakeAgentUrl, httpClient);
 
-var agentCard = await intakeAgentCardResolver.GetAgentCardAsync(token);
-Console.WriteLine($"Intake Agent Name: {agentCard.Name}");
-Console.WriteLine($"Intake Agent Description: {agentCard.Description}");
+var intakeAgentCard = await intakeAgentCardResolver.GetAgentCardAsync(token);
+Console.WriteLine($"Intake Agent Name: {intakeAgentCard.Name}");
+Console.WriteLine($"Intake Agent Description: {intakeAgentCard.Description}");
 
 var intakeAgent = await intakeAgentCardResolver.GetAIAgentAsync();
 Console.WriteLine($"Intake Agent Type: {intakeAgent.GetType().Name}");
@@ -35,6 +36,14 @@ Console.WriteLine($"Processing Agent Description: {processingAgentCard.Descripti
 
 var processingAgent = await processingAgentCardResolver.GetAIAgentAsync();
 Console.WriteLine($"Processing Agent Type: {processingAgent.GetType().Name}");
+
+//var dataAgentCardResolver = new A2ACardResolver(dataAgentUrl, httpClient);
+//var dataAgentCard = await dataAgentCardResolver.GetAgentCardAsync(token);
+//Console.WriteLine($"Data Agent Name: {dataAgentCard.Name}");
+//Console.WriteLine($"Data Agent Description: {dataAgentCard.Description}");
+
+//var dataAgent = await dataAgentCardResolver.GetAIAgentAsync();
+//Console.WriteLine($"Data Agent Type: {dataAgent.GetType().Name}");
 
 // Now to start the first agent.
 var purchaseOrder = await MessageIntakeAgent(intakeAgent);

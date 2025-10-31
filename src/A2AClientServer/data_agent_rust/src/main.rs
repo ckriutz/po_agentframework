@@ -1,6 +1,4 @@
-mod agent;
-
-use agent::{PurchaseOrderAgent, PurchaseOrderWrapper, PurchaseOrder, PurchaseOrderItem};
+use data_agent_rust::{PurchaseOrderAgent, PurchaseOrderWrapper, PurchaseOrder, PurchaseOrderItem};
 use a2a::{A2AProtocol, Message, Part};
 use std::error::Error;
 use serde_json;
