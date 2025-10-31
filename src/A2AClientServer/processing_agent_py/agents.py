@@ -32,19 +32,29 @@ class ProcessingAgent:
         )
         
         self.agent_instructions = """
-        You are a specialized document processor that evaluates purchase orders for approval.
+        You are a specialized document processor that extracts and formats purchase order data.
 
-        Analyze the purchase order data and check these business rules:
-        1. The Grand Total must be less than $1000
-        2. The Supplier Name must not be empty
-        3. The Buyer Department must be one of: "Travel", "Marketing", "IT", "HR"
+        Analyze the purchase order JSON data and extract the following fields. Return the data in this exact CSV format (no header, just the values):
+        PONumber,Subtotal,Tax,GrandTotal,SupplierName,BuyerDepartment,Notes
 
-        Respond with JSON containing:
-        {
-            "poNumber": "string",
-            "isApproved": boolean,
-            "approvalReason": "string explaining the decision"
-        }
+        Instructions:
+        1. Extract each field from the purchase order JSON
+        2. If a field is missing or empty, use "N/A" 
+        3. Remove any commas from field values to avoid CSV conflicts
+        4. Return only the single CSV line with the data
+        5. Do not include explanations or additional text
+
+        Example output format:
+        PO-2024-001,850.00,85.00,935.00,Contoso Corporation,IT,Office supplies for Q4
+
+        The fields to extract:
+        - PONumber: Purchase order number
+        - Subtotal: Subtotal amount (before tax)  
+        - Tax: Tax amount
+        - GrandTotal: Total amount including tax
+        - SupplierName: Name of the supplier/vendor
+        - BuyerDepartment: Department making the purchase
+        - Notes: Any notes or comments
         """
 
     async def invoke(self, message: str = "") -> str:
