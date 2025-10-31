@@ -1,0 +1,7 @@
+# Requirements for the Python Processing Agent
+openai
+fastapi>=0.104.0
+uvicorn>=0.24.0
+a2a-sdk[http-server]>=0.3.10
+python-dotenv
+azure-openai

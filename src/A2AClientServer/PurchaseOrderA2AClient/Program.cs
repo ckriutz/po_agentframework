@@ -3,28 +3,41 @@ using Microsoft.Extensions.AI;
 using Microsoft.Agents.AI.A2A;
 using A2A;
 using System.Text.Json;
+using System.Formats.Tar;
 
 // Create a cancellation token source for the entire program
 var cts = new CancellationTokenSource();
 var token = cts.Token;
 
 // First things first, lets see if can cwn get the agent, and it's card.
-var url = new Uri("http://localhost:5000");
+var IntakeAgentUrl = new Uri("http://localhost:5000");
+var processingAgentUrl = new Uri("http://localhost:9998");
 var httpClient = new HttpClient
 {
     Timeout = TimeSpan.FromMinutes(2)
 };
 
-var agentCardResolver = new A2ACardResolver(url, httpClient);
+// First lets set up the intake agent.
+var intakeAgentCardResolver = new A2ACardResolver(IntakeAgentUrl, httpClient);
 
-var agentCard = await agentCardResolver.GetAgentCardAsync(token);
-Console.WriteLine($"Agent Name: {agentCard.Name}");
-Console.WriteLine($"Agent Description: {agentCard.Description}");
+var agentCard = await intakeAgentCardResolver.GetAgentCardAsync(token);
+Console.WriteLine($"Intake Agent Name: {agentCard.Name}");
+Console.WriteLine($"Intake Agent Description: {agentCard.Description}");
 
-var agent = await agentCardResolver.GetAIAgentAsync();
-Console.WriteLine($"Agent Type: {agent.GetType().Name}");
+var intakeAgent = await intakeAgentCardResolver.GetAIAgentAsync();
+Console.WriteLine($"Intake Agent Type: {intakeAgent.GetType().Name}");
 
-var purchaseOrder = await MessageIntakeAgent();
+// Now let's set up the processing agent.
+var processingAgentCardResolver = new A2ACardResolver(processingAgentUrl, httpClient);
+var processingAgentCard = await processingAgentCardResolver.GetAgentCardAsync(token);
+Console.WriteLine($"Processing Agent Name: {processingAgentCard.Name}");
+Console.WriteLine($"Processing Agent Description: {processingAgentCard.Description}");
+
+var processingAgent = await processingAgentCardResolver.GetAIAgentAsync();
+Console.WriteLine($"Processing Agent Type: {processingAgent.GetType().Name}");
+
+// Now to start the first agent.
+var purchaseOrder = await MessageIntakeAgent(intakeAgent);
 if (purchaseOrder != null)
 {
     Console.WriteLine("Extracted Purchase Order:");
@@ -40,7 +53,9 @@ else
     Console.WriteLine("No purchase order extracted.");
 }
 
-async Task<PurchaseOrder> MessageIntakeAgent()
+await MessageProcessingAgent(processingAgent, purchaseOrder);
+
+async Task<PurchaseOrder> MessageIntakeAgent(AIAgent agent)
 {
     Console.WriteLine("Invoking Message Intake Agent...");
     AgentThread thread = agent.GetNewThread();
@@ -70,4 +85,19 @@ async Task<PurchaseOrder> MessageIntakeAgent()
         return null;
     }
     return purchaseOrder;
+}
+
+async Task MessageProcessingAgent(AIAgent agent, PurchaseOrder po)
+{
+    Console.WriteLine("Invoking Message Processing Agent...");
+    AgentThread thread = agent.GetNewThread();
+
+    ChatMessage message = new ChatMessage();
+    message.Role = ChatRole.User;
+    string poJson = JsonSerializer.Serialize(po, JsonSerializerOptions.Web);
+    message.Contents.Add(new TextContent($"Here is a purchase order in JSON format: {poJson}. Please process it accordingly."));
+
+    var response = await agent.RunAsync(message);
+    Console.WriteLine("Processing Agent Response:");
+    Console.WriteLine(response.ToString());
 }

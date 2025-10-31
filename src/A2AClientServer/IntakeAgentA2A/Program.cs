@@ -4,8 +4,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Http;
 
-// See https://aka.ms/new-console-template for more information
-Console.WriteLine("Hello, World!");
+Console.WriteLine("Starting Purchase Order Intake Agent...");
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddLogging();

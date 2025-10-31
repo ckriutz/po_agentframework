@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Text.Json.Serialization;
+using System.Text.Json;
+using System.Globalization;
 
 [Description("Purchase order information including PO number, amounts, supplier, and buyer details")]
 public class PurchaseOrder
@@ -30,7 +32,7 @@ public class PurchaseOrder
     public string? SupplierCountry { get; set; }
 
     // Line items table
-    [JsonPropertyName("items")]
+    [JsonPropertyName("lineItems")]
     public List<PurchaseOrderItem> Items { get; set; } = new List<PurchaseOrderItem>();
 
     // Purchase order metadata
@@ -49,6 +51,7 @@ public class PurchaseOrder
 
     // Tax information
     [JsonPropertyName("taxRate")]
+    [JsonConverter(typeof(PercentageStringToDecimalConverter))]
     public decimal TaxRate { get; set; }
 
     // Computed totals
@@ -100,4 +103,41 @@ public class PurchaseOrderItem
     
     [JsonPropertyName("lineTotal")]
     public decimal LineTotal { get; set; }
+}
+
+public class PercentageStringToDecimalConverter : JsonConverter<decimal>
+{
+    public override decimal Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.String)
+        {
+            string value = reader.GetString()!;
+            // Handle percentage strings like "7%"
+            if (value.EndsWith("%"))
+            {
+                string numericPart = value.TrimEnd('%');
+                if (decimal.TryParse(numericPart, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal result))
+                {
+                    return result / 100; // Convert percentage to decimal (7% -> 0.07)
+                }
+            }
+            // Handle regular numeric strings
+            if (decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal directResult))
+            {
+                return directResult;
+            }
+            throw new JsonException($"Unable to convert \"{value}\" to decimal.");
+        }
+        else if (reader.TokenType == JsonTokenType.Number)
+        {
+            return reader.GetDecimal();
+        }
+        
+        throw new JsonException($"Unexpected token type: {reader.TokenType}");
+    }
+
+    public override void Write(Utf8JsonWriter writer, decimal value, JsonSerializerOptions options)
+    {
+        writer.WriteNumberValue(value);
+    }
 }

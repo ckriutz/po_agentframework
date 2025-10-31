@@ -4,8 +4,7 @@ using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.Workflows;
 using Microsoft.Extensions.AI;
 
-Console.WriteLine("Hello, World!");
-
+// First lets create the agents.
 AIAgent intakeAgent = Agents.CreateIntakeAgent();
 AIAgent processingAgent = Agents.CreateProcessingAgent();
 AIAgent dataAgent = Agents.CreateDataAgent();
@@ -27,9 +26,9 @@ StreamingRun run = await InProcessExecution.StreamAsync(workflow, message);
 await run.TrySendMessageAsync(new TurnToken(emitEvents: true));
 
 
-// Must send the turn token to trigger the agents.
-// The agents are wrapped as executors. When they receive messages,
-// they will cache the messages and only start processing when they receive a TurnToken.
+//Must send the turn token to trigger the agents.
+//The agents are wrapped as executors. When they receive messages,
+//they will cache the messages and only start processing when they receive a TurnToken.
 string? lastExecutorId = null;
 await foreach (WorkflowEvent evt in run.WatchStreamAsync().ConfigureAwait(false))
 {
